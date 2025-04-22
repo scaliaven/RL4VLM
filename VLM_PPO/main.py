@@ -49,6 +49,11 @@ from accelerate.state import AcceleratorState
 import warnings
 warnings.filterwarnings("ignore")
 
+def text_process(obs, tokenizer):
+    result = tokenizer_image_token(obs, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0)
+    result[result == 0] = 259 # 869: . (period), 29871: SPIECE, 259: whitespace
+    return result
+
 def main():
     args = get_args()
 
@@ -116,6 +121,12 @@ def main():
     print("Model max context length:{}".format(base.config.max_length))
     base, tokenizer = init_pretrained_model(base, tokenizer, pretrain_mm_adapter = args.pretrain_mm_adapter)
     image_processor = base.get_vision_tower().image_processor
+    # if input "image" is actually text
+    if args.feature == "text":
+        image_processor = tokenizer
+        print(base)
+        base.model.vision_tower = base.model.embed_tokens
+        base.model.mm_projector = nn.Identity()
 
     base_lora_config = LoraConfig(
             r=128,
@@ -133,12 +144,19 @@ def main():
     if "gym_cards" in args.env_name.lower():
         envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                              args.gamma, None, device, False, 1)
+    elif "nlp" in args.env_name.lower():
+        envs = make_vec_envs("Taxi-v3", args.seed, args.num_processes,
+                             args.gamma, None, device, False)
     else:
         print("Environment not supported")
         exit(1)
 
 
     obs = envs.reset()
+    if args.feature == "text":
+        obs = list(envs.envs[0].decode(obs))
+        obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
+        obs = text_process(obs, tokenizer)
     infos = None
     ## Inputing Prompt here
     qs = get_prompt(args.env_name, args.action_only_prompt, infos)
@@ -180,10 +198,15 @@ def main():
             args.entropy_coef,
             max_grad_norm=args.max_grad_norm)
 
-    rollouts = RolloutStorage(args.num_steps, args.num_processes,
-                              envs.observation_space.shape, envs.action_space, args.max_new_tokens)
-
-    _, output_ids, action, action_log_prob, action_tokens_log_prob = actor_critic.act(obs, INPUT_IDS = INPUT_IDS)
+    print(envs.observation_space.shape, obs.shape) # temporary fix
+    if args.feature == "text":
+        rollouts = RolloutStorage(args.num_steps, args.num_processes,
+                                obs.shape, envs.action_space, args.max_new_tokens)
+    elif args.feature == "image":
+        rollouts = RolloutStorage(args.num_steps, args.num_processes,
+                                envs.observation_space.shape, envs.action_space, args.max_new_tokens)
+    _, output_ids, action, action_log_prob, action_tokens_log_prob = actor_critic.act(obs, INPUT_IDS = INPUT_IDS, feature_type=args.feature)
+    # print("Shape & Type of observation:", obs.shape, type(obs))
     print("action:{}".format(action))
     print("action_log_prob:{}".format(action_log_prob))
     print("action_tokens_log_prob:{}".format(action_tokens_log_prob))
@@ -209,18 +232,26 @@ def main():
     num_explore = int(args.explore_portion*num_updates)
     prev_infos = []
     infos = []
-    for j in tqdm(range(num_updates)):
+    for j in range(num_updates):
 
-        for step in range(args.num_steps):
+        for step in tqdm(range(args.num_steps)):
             # Sample actions
             with torch.no_grad():
                 INPUT_IDS = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0)
                 INPUT_IDS[INPUT_IDS == 0] = 259 # 869: . (period), 29871: SPIECE, 259: whitespace
-                value, output_id, action, action_log_prob, action_tokens_log_prob = actor_critic.act(
-                        rollouts.obs[step], INPUT_IDS = INPUT_IDS)
+                if args.feature == "text":
+                    value, output_id, action, action_log_prob, action_tokens_log_prob = actor_critic.act(
+                            rollouts.obs[step][0], INPUT_IDS = INPUT_IDS, feature_type=args.feature)
+                elif args.feature == "image":
+                    value, output_id, action, action_log_prob, action_tokens_log_prob = actor_critic.act(
+                            rollouts.obs[step], INPUT_IDS = INPUT_IDS, feature_type=args.feature)
             text_action = tokenizer.decode(list(filter(lambda num: num != 0, output_id[0].tolist())))
             prev_infos = copy.deepcopy(infos)
             obs, reward, done, infos = envs.step(action)
+            if args.feature == "text":
+                obs = list(envs.envs[0].decode(obs))
+                obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
+                obs = text_process(obs, tokenizer)
 
             qs = get_prompt(args.env_name, args.action_only_prompt, infos)
             qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
@@ -254,12 +285,16 @@ def main():
         print("action log prob:{}".format(action_log_prob))
         print("action tokens log prob:{}".format(action_tokens_log_prob))
         with torch.no_grad():
-            next_value = actor_critic.get_value(
-                rollouts.obs[-1]).detach()
+            if args.feature == "text":
+                next_value = actor_critic.get_value(
+                    rollouts.obs[-1][0], feature_type = args.feature).detach()
+            elif args.feature == "image":
+                next_value = actor_critic.get_value(
+                    rollouts.obs[-1], feature_type = args.feature).detach()
 
         rollouts.compute_returns(next_value, args.use_gae, args.gamma,
                                  args.gae_lambda, args.use_proper_time_limits)
-        value_loss, action_loss, dist_entropy = agent.update(rollouts)
+        value_loss, action_loss, dist_entropy = agent.update(rollouts, args.feature)
         lr_scheduler.step()
 
         rollouts.after_update()

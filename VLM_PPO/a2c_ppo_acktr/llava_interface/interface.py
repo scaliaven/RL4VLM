@@ -12,7 +12,10 @@ def get_chunk(lst, n, k):
 
 def llava_generate(value_model, tokenizer, input_ids, image_tensor, args):
     base = value_model.base
-    image_tensor = image_tensor.to(base.device, dtype = base.dtype)
+    if args.feature == "image":
+        image_tensor = image_tensor.to(base.device, dtype = base.dtype)
+    elif args.feature == "text":
+        image_tensor = image_tensor.to(base.device, dtype = torch.int64)
     _, _, _, _, inputs_embeds, _ = base.prepare_inputs_labels_for_multimodal(input_ids.to(base.device), None, None, None, None, image_tensor)
     inputs_embeds = inputs_embeds.to(base.device, dtype = base.dtype)
     with torch.inference_mode():
@@ -32,14 +35,17 @@ def llava_generate(value_model, tokenizer, input_ids, image_tensor, args):
     padded_output_ids = torch.zeros(output_ids.size(0), 2*args.max_new_tokens).to(dtype=output_ids.dtype, device = output_ids.device)
     padded_output_ids[:, :output_ids.size(1)] = output_ids
     with torch.no_grad():
-        values, sum_log_probs, action_tokens_log_prob = llava_evaluate(value_model, input_ids, padded_output_ids, image_tensor, args.temperature, args.thought_prob_coef)
+        values, sum_log_probs, action_tokens_log_prob = llava_evaluate(value_model, input_ids, padded_output_ids, image_tensor, args.temperature, args.thought_prob_coef, args.feature)
     return values, padded_output_ids, outputs, sum_log_probs, action_tokens_log_prob
 
-def llava_evaluate(value_model, input_ids, output_ids, image_tensor, temperature, thought_prob_coef):
+def llava_evaluate(value_model, input_ids, output_ids, image_tensor, temperature, thought_prob_coef, feature_type="image"):
     if output_ids.size(0) != 1:
         input_ids = input_ids.broadcast_to(output_ids.size(0), input_ids.size(-1))
     base = value_model.base
-    image_tensor = image_tensor.to(base.device, dtype=base.dtype)
+    if feature_type == "image":
+        image_tensor = image_tensor.to(base.device, dtype=base.dtype)
+    elif feature_type == "text":
+        image_tensor = image_tensor.to(base.device, dtype = torch.int64)
     output_ids = output_ids.to(base.device)
     input_ids = input_ids.to(base.device)
     _, _, _, _, inputs_embeds, _ = base.prepare_inputs_labels_for_multimodal(torch.cat([input_ids, output_ids], dim = 1), None, None, None, None, image_tensor)
