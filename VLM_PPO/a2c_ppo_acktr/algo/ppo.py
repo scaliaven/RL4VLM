@@ -34,7 +34,7 @@ class PPO():
         self.optimizer = optimizer
         self.accelerator = accelerator
 
-    def update(self, rollouts):
+    def update(self, rollouts, feature_type = "image"):
         advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]
         advantages = (advantages - advantages.mean()) / (
             advantages.std() + 1e-5)
@@ -54,8 +54,10 @@ class PPO():
                     value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, \
                             adv_targ = sample
                     # Reshape to do in a single forward pass for all steps
+                    if feature_type == "text":
+                        obs_batch = obs_batch[0]
                     values, action_log_probs = self.actor_critic.evaluate_actions(
-                        obs_batch, output_ids_batch)
+                        obs_batch, output_ids_batch, feature_type = feature_type)
                     # values and action_log_probs on two different devices!! because they come from two llava
                     if torch.isnan(action_log_probs).any():
                         continue

@@ -1,7 +1,7 @@
 import os
 
-# import gym
-import gymnasium as gym
+import gym
+# import gymnasium as gym
 import numpy as np
 import torch
 from gymnasium.spaces.box import Box
@@ -42,7 +42,7 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets, use_cnn=False):
         if is_atari:
             env = NoopResetEnv(env, noop_max=30)
             env = MaxAndSkipEnv(env, skip=4)
-        env.reset(seed=seed+rank)
+        env.reset()#seed=seed+rank)
 
         if str(env.__class__.__name__).find('TimeLimit') >= 0:
             env = TimeLimitMask(env)

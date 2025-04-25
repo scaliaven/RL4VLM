@@ -181,6 +181,7 @@ def get_args():
     parser.add_argument("--train-vision", type=str, default='all')
     parser.add_argument("--thought-prob-coef", type=float, default=1.0, help='any number between 0-1, multiplier for the log thought probability')
     parser.add_argument("--action_only_prompt", default=False, action='store_true')
+    parser.add_argument("--feature", type=str, default='image')
     # Argments for supporting alf config file
     parser.add_argument("--alf_config", type=str, default=None)
 

@@ -1,5 +1,5 @@
-TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES="0,1" accelerate launch --config_file config_zero2.yaml --main_process_port 29488 ../main.py \
-    --env-name gym_cards/NumberLine-v0 \
+TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES="0" accelerate launch --config_file config_zero2.yaml --main_process_port 29488 ../main.py \
+    --feature tensor \
     --init-lr 1e-5 \
     --end-lr 1e-9 \
     --lr_max_steps 25 \
@@ -14,9 +14,13 @@ TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES="0,1" accelerate launch --conf
     --temperature 0.2 \
     --ppo-epoch 4 \
     --mini-batch-size 1 \
-    --model-path /your_sft_checkpoint_for_numberline \
+    --model-path liuhaotian/llava-v1.6-mistral-7b \
     --use-lora \
     --train-vision all \
+    --env-name xiangqi \
+    # --env-name nlp \
+    # --env-name gym_cards/NumberLine-v0 \
+    # --env-name nlp \
     # --wandb-project you_wandb_proj \
     # --wandb-run you_wandb_run \
     # --use-wandb \
