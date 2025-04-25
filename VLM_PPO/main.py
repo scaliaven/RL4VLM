@@ -295,8 +295,6 @@ def main():
                 [[0.0] if 'bad_transition' in info.keys() else [1.0] for info in infos])
             rollouts.insert(obs, output_id, action,
                             action_log_prob, value, reward, masks, bad_masks)
-            if step == 2:
-                break
         print("****** iteration number:{} ******".format(j))
         print("prompt:{}".format(prompt))
         print("text_action:{}".format(text_action))
