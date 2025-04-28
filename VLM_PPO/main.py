@@ -2,6 +2,8 @@ from patch import replace_llama_attn_with_xformers_attn
 replace_llama_attn_with_xformers_attn()
 print("using xformers")
 
+import sys; print(sys.path)
+
 import copy
 import glob
 import os
@@ -130,7 +132,13 @@ def main():
     elif args.feature == "tensor":
         image_processor = nn.Flatten()
         print(base)
-        base.model.vision_tower = nn.Linear(90, 4096)
+        if "junqi" in args.env_name:
+            in_features = 60
+        elif "xiangqi" in args.env_name:
+            in_features = 90
+        else:
+            raise Exception(f"Tensor feature not supported for {args.env_name}")
+        base.model.vision_tower = nn.Linear(in_features, 4096)
         base.model.mm_projector = nn.Identity()
 
     base_lora_config = LoraConfig(
@@ -155,6 +163,9 @@ def main():
     elif "xiangqi" in args.env_name.lower():
         envs = make_vec_envs("gym_xiangqi:xiangqi-v0", args.seed, args.num_processes,
                              args.gamma, None, device, False)
+    elif "junqi" in args.env_name.lower():
+        envs = make_vec_envs("gym_junqi:junqi-v0", args.seed, args.num_processes,
+                             args.gamma, None, device, False)
     else:
         print("Environment not supported")
         exit(1)
@@ -162,6 +173,9 @@ def main():
 
     obs = envs.reset()
     if args.feature == "tensor":
+        if "junqi" in args.env_name:
+            UNKNOWN = 26
+            obs[obs < 0] = -UNKNOWN
         obs = obs[0]
     if args.feature == "text":
         obs = list(envs.envs[0].decode(obs))
@@ -247,7 +261,7 @@ def main():
     infos = []
     for j in range(num_updates):
 
-        for step in tqdm(range(args.num_steps)):
+        for step in tqdm(range(args.num_steps), desc=f'training for epoch {j}'):
             # Sample actions
             with torch.no_grad():
                 INPUT_IDS = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0)
@@ -269,6 +283,10 @@ def main():
                 obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
                 obs = text_process(obs, tokenizer)
             elif args.feature == "tensor":
+                if "junqi" in args.env_name:
+                    UNKNOWN = 26
+                    obs[obs < 0] = -UNKNOWN
+                print(obs)
                 obs = obs[0]
 
             qs = get_prompt(args.env_name, args.action_only_prompt, infos)

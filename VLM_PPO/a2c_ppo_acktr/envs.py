@@ -1,11 +1,18 @@
 import os
 
 import gym
+import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, "../.."))
+gym_junqi_path = os.path.join(project_root, "gym-junqi")
+sys.path.append(gym_junqi_path)
+
+import gym_junqi
 # import gymnasium as gym
 import numpy as np
 import torch
 from gymnasium.spaces.box import Box
-from gymnasium.wrappers.clip_action import ClipAction
+from gymnasium.wrappers import ClipAction
 from stable_baselines3.common.atari_wrappers import (ClipRewardEnv,
                                                      EpisodicLifeEnv,
                                                      FireResetEnv,

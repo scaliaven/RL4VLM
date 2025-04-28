@@ -71,6 +71,11 @@ def get_prompt(env_name, action_only, infos = None):
         qs = qs + "And your goal is to move a piece at one step, follow the rules and win the game. "
         qs = qs + "Your response should be a valid json file in the following format: \n{\n "
         qs = qs + "\"action\": \n}"
+    elif env_name == "junqi":
+        qs = "You are playing a game called Junqi. You will see the locations for each piece, but the types of enemy pieces are hidden."
+        qs = qs + "And your goal is to move a piece at one step, follow the rules and win the game. "
+        qs = qs + "Your response should be a valid json file in the following format: \n{\n "
+        qs = qs + "\"action\": \n}"
     return qs
 
 # Define the function that processes the list of strings according to the specified rules
@@ -91,6 +96,8 @@ def text_projection(text_actions: List[str], env_name):
                        "pickup passenger", "drop off passenger"]
     elif env_name == "xiangqi":
         action_list = [f"{i}" for i in range(129600)]
+    elif env_name == "junqi":
+        action_list = [f"{i}" for i in range(90000)]
     else:
         raise NotImplementedError("Action list not implemented for this env!")
     for string in text_actions:
