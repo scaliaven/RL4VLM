@@ -136,6 +136,8 @@ def main():
             in_features = 60
         elif "xiangqi" in args.env_name:
             in_features = 90
+        elif "taxi" in args.env_name:
+            in_features = 4
         else:
             raise Exception(f"Tensor feature not supported for {args.env_name}")
         base.model.vision_tower = nn.Linear(in_features, 4096)
@@ -163,7 +165,7 @@ def main():
     if "gym_cards" in args.env_name.lower():
         envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                              args.gamma, None, device, False, 1)
-    elif "nlp" in args.env_name.lower():
+    elif "taxi" in args.env_name.lower():
         envs = make_vec_envs("Taxi-v3", args.seed, args.num_processes,
                              args.gamma, None, device, False)
     elif "xiangqi" in args.env_name.lower():
@@ -179,11 +181,17 @@ def main():
 
     obs = envs.reset()
     if args.feature == "tensor":
-        obs = obs[0]
+        if "taxi" in args.env_name.lower():
+            obs = list(envs.envs[0].decode(obs))
+            obs = torch.tensor([obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item()])
+        else:
+            obs = obs[0]
     if args.feature == "text":
         obs = list(envs.envs[0].decode(obs))
         obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
         obs = text_process(obs, tokenizer)
+    if args.feature == "image" and "taxi" in args.env_name.lower():
+        obs = envs.envs[0].render()
     infos = None
     ## Inputing Prompt here
     qs = get_prompt(args.env_name, args.action_only_prompt, infos)
@@ -210,7 +218,7 @@ def main():
     # https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CosineAnnealingLR.html
     lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.lr_max_steps, eta_min=args.end_lr)
 
-    AcceleratorState().deepspeed_plugin.deepspeed_config['train_micro_batch_size_per_gpu'] = 1
+    # AcceleratorState().deepspeed_plugin.deepspeed_config['train_micro_batch_size_per_gpu'] = 1
 
     actor_critic, optimizer, lr_scheduler = accelerator.prepare(actor_critic, optimizer, lr_scheduler)
 

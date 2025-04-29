@@ -61,7 +61,7 @@ def get_prompt(env_name, action_only, infos = None):
             qs = qs + "If the current formula equals 24, output '='. "
             qs = qs + "Otherwise consider which number or operator should be appended to the current formula to make it equal 24.} \n"
         qs = qs + "\"action\": \"{number}\" or \"{operator}\" \n \}"
-    elif env_name == 'nlp':
+    elif env_name == 'taxi':
         qs = "You are playing a game called Taxi. You will see the taxi position in rows and columns, passenger location, and destination. "
         qs = qs + "And your goal is to drives to the passenger's location, picks up the passenger, drives to the passenger's destination. "
         qs = qs + "Your response should be a valid json file in the following format: \n{\n "
@@ -91,7 +91,7 @@ def text_projection(text_actions: List[str], env_name):
     elif env_name == 'gym_cards/Points24-v0':
         action_list = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
                        "+", "-", "*", "/", "(", ")", "="]
-    elif env_name == 'nlp':
+    elif env_name == 'taxi':
         action_list = ["move south", "move north", "move east", "move west",
                        "pickup passenger", "drop off passenger"]
     elif env_name == "xiangqi":
