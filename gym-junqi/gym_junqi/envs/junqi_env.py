@@ -2,7 +2,8 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 import numpy as np
-
+import os, sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
 from gym_junqi.junqi_game import JunQiGame
 from gym_junqi.utils import (
     action_space_to_move,
@@ -450,7 +451,7 @@ class JunQiEnv(gym.Env):
         self._game.set_pieces(self._ally_piece, self._enemy_piece)
         self._state_hash = hash(str(self._state))
 
-        return np.array(self._state)
+        return self.get_state()
 
     def render(self, mode='human'):
         """
@@ -699,3 +700,40 @@ class JunQiEnv(gym.Env):
     @property
     def game(self):
         return self._game
+
+def obs_to_text(obs):
+    '''
+    obs: 2D tensor
+    return: str
+    '''
+    ls = []
+    for i in range(len(obs)):
+        for j in range(len(obs[0])):
+            if obs[i][j] == 0:
+                continue
+            else:
+                if abs(obs[i][j]) == 26:
+                    ls.append(f"A hidden enemy piece is located in ({i},{j})")
+                else:
+                    ls.append(f"An ally {JunQiEnv.PIECE_TYPE[abs(obs[i][j])]} piece is located in ({i},{j})")
+    text = "; ".join(ls)
+    return text
+
+
+
+class JunqiWrappper():
+    def __init__(self, env, game, feature):
+        self.env = env  
+        self.game = game
+        self.feature = feature
+		# NOTE usage: replace JunqiEnv in RL4VLM with JunqiWrapper
+        # env = JunqiWrapper(junqienv, junqigame, args.feature)
+
+    def get_obs(self):
+        obs = self.env.get_state()
+        if self.feature == 'tensor':
+            return obs
+        elif self.feature == 'text':
+            return obs_to_text(obs)
+        elif self.feature == 'image':
+            return NotImplementedError

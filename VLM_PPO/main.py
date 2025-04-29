@@ -34,7 +34,6 @@ from llava.utils import disable_torch_init
 from llava.mm_utils import tokenizer_image_token, get_model_name_from_path, KeywordsStoppingCriteria
 from llava.model import LlavaLlamaForCausalLM
 from llava.model.language_model.llava_mistral import LlavaMistralForCausalLM
-
 import math
 import random
 from functools import partial
@@ -55,6 +54,7 @@ def text_process(obs, tokenizer):
     result = tokenizer_image_token(obs, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0)
     result[result == 0] = 259 # 869: . (period), 29871: SPIECE, 259: whitespace
     return result
+
 
 def main():
     args = get_args()
@@ -181,8 +181,8 @@ def main():
     if args.feature == "tensor":
         obs = obs[0]
     if args.feature == "text":
-        obs = list(envs.envs[0].decode(obs))
-        obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
+        # obs = list(envs.envs[0].decode(obs))
+        # obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
         obs = text_process(obs, tokenizer)
     infos = None
     ## Inputing Prompt here

@@ -17,11 +17,6 @@
 #SBATCH --mail-user=yx3038@nyu.edu
 #SBATCH --no-requeue
 
-source /u/yxu21/miniforge3/etc/profile.d/conda.sh
-export LD_LIBRARY_PATH="/sw/spack/deltas11-2023-03/apps/linux-rhel8-x86_64/gcc-8.5.0/gcc-11.4.0-yycklku/lib64:${LD_LIBRARY_PATH}"
-conda activate rl4vlm
-module load cuda/12.4.0
-module load gcc/11.4.0
 
 TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 accelerate launch --config_file config_zero2.yaml --main_process_port 29488 ../main.py \
     --feature tensor \

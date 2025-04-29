@@ -108,3 +108,5 @@ wandb/
 
 config_zero2_test.yaml
 google-cloud-sdk/
+
+*.pyc
