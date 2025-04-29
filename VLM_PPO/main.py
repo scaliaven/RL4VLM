@@ -151,6 +151,12 @@ def main():
         )
     if args.use_lora:
         base = get_peft_model(base, base_lora_config)
+
+    target_names = ["vision_tower", "mm_projector"]
+    for name, param in base.named_parameters():
+        if any(target in name for target in target_names):
+            param.requires_grad = True
+    
     value_model = VLMValue(base)
     value_model = value_model.to(model_device)
 
@@ -173,9 +179,6 @@ def main():
 
     obs = envs.reset()
     if args.feature == "tensor":
-        if "junqi" in args.env_name:
-            UNKNOWN = 26
-            obs[obs < 0] = -UNKNOWN
         obs = obs[0]
     if args.feature == "text":
         obs = list(envs.envs[0].decode(obs))
@@ -283,9 +286,6 @@ def main():
                 obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
                 obs = text_process(obs, tokenizer)
             elif args.feature == "tensor":
-                if "junqi" in args.env_name:
-                    UNKNOWN = 26
-                    obs[obs < 0] = -UNKNOWN
                 print(obs)
                 obs = obs[0]
 
