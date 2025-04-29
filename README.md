@@ -12,8 +12,8 @@ pip install -e ./gym-cards
 
 ## Play
 ```bash
-cd RL4VLM/gym-junqi
-python gym_junqi/examples/game_mode.py
+cd RL4VLM/gym-junqi/gym_junqi
+python examples/game_mode.py
 ```
 
 ## Training

@@ -226,10 +226,6 @@ class JunQiEnv(gym.Env):
         self._ally_actions = np.zeros((n, ))
         self._enemy_actions = np.zeros((n, ))
 
-        # History of consecutive jiangs (will be used to ban perpetual check)
-        self._ally_jiang_history = None
-        self._enemy_jiang_history = None
-
         # Initialize PyGame module
         self._game = JunQiGame()
 
