@@ -1,7 +1,7 @@
 Installation
 ============
 
-You can install Gym Xiangqi using pip or directly from source code.
+You can install Gym Junqi using pip or directly from source code.
 
 
 Using PIP
@@ -10,28 +10,28 @@ To install using pip, run:
 
 .. code-block:: sh
 
-   pip install gym-xiangqi
+   pip install gym-junqi
 
 Installing from Source
 ----------------------
 To install from the source,
 
-1. First download the latest release from our `repository <https://github.com/tanliyon/gym-xiangqi>`_.
+1. First download the latest release from our `repository <https://github.com/tanliyon/gym-junqi>`_.
 2. Extract the files using `unzip` or `tar`
 
 .. code-block:: sh
 
-   unzip gym-xiangqi-x.x.x.zip
+   unzip gym-junqi-x.x.x.zip
 
 .. code-block:: sh
 
-   tar -xf gym-xiangqi-x.x.x.zip
+   tar -xf gym-junqi-x.x.x.zip
 
 3. Change directory to project root:
 
 .. code-block:: sh
 
-   cd gym-xiangqi
+   cd gym-junqi
 
 4. Build and install:
 
@@ -48,13 +48,13 @@ To install for development,
 
 .. code-block:: sh
 
-   git clone https://github.com/tanliyon/gym-xiangqi.git
+   git clone https://github.com/Zephyr271828/gym-junqi.git
 
 2. Change directory to project root:
 
 .. code-block:: sh
 
-   cd gym-xiangqi
+   cd gym-junqi
 
 3. Install Python Dependencies:
 

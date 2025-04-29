@@ -1,8 +1,8 @@
 Examples
 ========
 
-In this page, we provide some example usage of our Xiangqi environment.
-Xiangqi environment has two main usage. First one is, of course, training 
+In this page, we provide some example usage of our Junqi environment.
+Junqi environment has two main usage. First one is, of course, training 
 the reinforcement learning agent, and the second one is running a game 
 that you can play against your reinforcement learning agent.
 
@@ -11,31 +11,31 @@ Training
 If you are familiar working with OpenAI gym environment. Then, you can skip
 this part since most of these will be something you already know.
 
-Creating and running a Xiangqi environment is pretty simple. Let's get started
+Creating and running a Junqi environment is pretty simple. Let's get started
 by creating and opening a Python script file. Then follow these steps:
 
-1. Create a Xiangqi environment
+1. Create a Junqi environment
 This can be either done with :code:`gym.make()` or instantiating 
-:code:`XiangQiEnv` object.
+:code:`JunQiEnv` object.
 
 Using :code:`gym.make()`:
 
 .. code-block:: python
 
    import gym
-   env = gym.make('gym_xiangqi:xiangqi-v0')
+   env = gym.make('gym_junqi:junqi-v0')
 
-Using :code:`XiangQiEnv` constructor:
+Using :code:`JunQiEnv` constructor:
 
 .. code-block:: python
 
-   from gym_xiangqi.envs import XiangQiEnv
-   env = XiangQiEnv()
+   from gym_junqi.envs import JunQiEnv
+   env = JunQiEnv()
 
 2. Create a training loop
 
 Now, we will create a loop that will execute interactions between the agent 
-and the environment. For this example, we will only loop one episode of Xiangqi game.
+and the environment. For this example, we will only loop one episode of Junqi game.
 An episode is one full game of any reinforcement learning environment.
 
 .. code-block:: python
@@ -99,7 +99,7 @@ Finally at the end of the :code:`while` loop make sure to close the environment 
 This will free up resources associated with the environment and exit the program gracefully.
 
 These are just the basics of a Gym environment. Please also take a look at the 
-`agent_v_agent_demo.py <https://github.com/tanliyon/gym-xiangqi/blob/main/gym_xiangqi/examples/agent_v_agent_demo.py>`_ 
+`agent_v_agent_demo.py <https://github.com/Zephyr271828/gym-junqi/blob/main/gym_junqi/examples/agent_v_agent_demo.py>`_ 
 file  located in our repository.
 For more experience with Gym environments, please check out `OpenAI Gym repository <https://github.com/openai/gym>`_ 
 and try out the environments implemented by OpenAI.
@@ -117,10 +117,10 @@ First add these import statements in addition to those added in the training exa
 
 .. code-block:: python
 
-   from gym_xiangqi.constants import RED, BLACK, PIECE_ID_TO_NAME, ALLY
-   from gym_xiangqi.utils import action_space_to_move
+   from gym_junqi.constants import RED, BLACK, PIECE_ID_TO_NAME, ALLY
+   from gym_junqi.utils import action_space_to_move
 
-Similar to the training code, we are going to first instantiate our Xiangqi environment, and 
+Similar to the training code, we are going to first instantiate our Junqi environment, and 
 create a loop to interact with the environment. This time our :code:`while` loop will look like 
 this:
 
@@ -187,6 +187,6 @@ from the code above to render the game and log some piece movements on our termi
        print("================")
    env.close()
 
-Most of this code is referenced from our `game_mode.py <https://github.com/tanliyon/gym-xiangqi/blob/main/gym_xiangqi/examples/game_mode.py>`_
+Most of this code is referenced from our `game_mode.py <https://github.com/Zephyr271828/gym-junqi/blob/main/gym_junqi/examples/game_mode.py>`_
 file in our repository .
 Please do also check it out. Thanks for the interest!

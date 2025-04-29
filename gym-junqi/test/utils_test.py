@@ -1,9 +1,9 @@
 import unittest
 
-from gym_xiangqi.utils import move_to_action_space, action_space_to_move
+from gym_junqi.utils import move_to_action_space, action_space_to_move
 
 
-class TestXiangQiUtils(unittest.TestCase):
+class TestJunQiUtils(unittest.TestCase):
 
     def test_move_to_action_space(self):
         i = 0

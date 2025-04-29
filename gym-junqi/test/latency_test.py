@@ -1,5 +1,5 @@
-from gym_xiangqi.envs.xiangqi_env import XiangQiEnv  # NOQA
-from gym_xiangqi.agents import RandomAgent  # NOQA
+from gym_junqi.envs.junqi_env import JunQiEnv  # NOQA
+from gym_junqi.agents import RandomAgent  # NOQA
 import timeit
 
 """ Timing """
@@ -9,7 +9,7 @@ NUM_REPEAT = 10
 NUM_RUN = 1
 
 """ Setup """
-ENV_SETUP = "env = XiangQiEnv()"
+ENV_SETUP = "env = JunQiEnv()"
 AGENT_SETUP = "agent = RandomAgent()"
 
 
@@ -54,13 +54,13 @@ def measure_and_print_latency(methods_to_setup):
 def env_latency():
     """
     Measure and print the latency of the methods defined
-    in XiangQiEnv.
+    in JunQiEnv.
     """
-    print("XiangQiEnv Latency (ms)")
+    print("JunQiEnv Latency (ms)")
     print("=========================")
 
     methods_to_setup = {
-        "XiangQiEnv()": "",
+        "JunQiEnv()": "",
         "env.init_pieces()": ENV_SETUP,
         "env.get_possible_actions(player)": f"{ENV_SETUP}; player=1;",
         "env.step(action)":

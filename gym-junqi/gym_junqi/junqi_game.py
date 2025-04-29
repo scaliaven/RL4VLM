@@ -21,10 +21,10 @@ from gym_junqi.custom_board import custom_board
 
 class JunQiGame:
     """
-    This class represents the Xiangqi game using PyGame.
+    This class represents the Junqi game using PyGame.
     It is also a medium in which different components interact as a whole.
     For example, rendering the game graphics, taking user input from the game
-    and providing information necessary for our XiangQiEnv class to function as
+    and providing information necessary for our JunQiEnv class to function as
     reinforcement learning environment are all communicated and integrated
     through this class.
     """
@@ -65,7 +65,7 @@ class JunQiGame:
 
         # set caption
         self.screen = pygame.display.set_mode(self.dim)
-        pygame.display.set_caption("AI Xiangqi(Chinese Chess)")
+        pygame.display.set_caption("AI Junqi(Chinese Military Chess)")
 
         # init board
         self.board_background = self.init_board()

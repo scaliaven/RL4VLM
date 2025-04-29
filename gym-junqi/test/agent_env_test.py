@@ -1,4 +1,4 @@
-from gym_xiangqi.agents import RandomAgent
+from gym_junqi.agents import RandomAgent
 
 import gym
 
@@ -10,7 +10,7 @@ def test_random_agent_play_itself():
     Test integration between agent and env by
     playing a game against itself.
     """
-    env = gym.make('gym_xiangqi:xiangqi-v0')
+    env = gym.make('gym_junqi:junqi-v0')
     agent = RandomAgent()
 
     done = False

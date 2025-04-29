@@ -25,11 +25,10 @@ from gym_junqi.constants import (
 
 class JunQiEnv(gym.Env):
     """
-    This is Xiangqi (Chinese chess) game implemented as reinforcement
-    learning environment using OpenAI Gym framework. Xiangqi is played
-    on a board of 10 rows and 9 columns with 16 pieces on each side (7
-    unique pieces called General, Advisor, Elephant, Horse, Chariot,
-    Cannon and Soldier.
+    This is Junqi (Chinese chess) game implemented as reinforcement
+    learning environment using OpenAI Gym framework. Junqi is played
+    on a board of 12 rows and 5 columns with 25 pieces on each side (12
+    unique pieces called Field Marshal, General, Major General, Brigadier, Colonel, Engineer, Landmine, Major, Captain, Lieutenant, and Bomb).
 
     Starting State:
     The initial board state with pieces laid out in correct position.
@@ -39,28 +38,28 @@ class JunQiEnv(gym.Env):
     Either the red or black general is captured by the opponent.
 
     Attributes:
-        observation_space (gym.spaces.Box(10, 9)):
+        observation_space (gym.spaces.Box(12, 5)):
             The observation space is the state of the board and pieces.
             Each item in the space corresponds to a single coordinate on
             the board with the value range from -16 to 16 which represents
             the pieces. Negative integers are enemy pieces and positive
             integers are ally pieces. For specific piece ID mapping,
-            please reference `gym_xiangqi/constants.py`.
+            please reference `gym_junqi/constants.py`.
 
-        action_space (gym.spaces.Discrete(16 * 10 * 9 * 10 * 9)):
+        action_space (gym.spaces.Discrete(25 * 12 * 5 * 12 * 5)):
             The action space is an aggregation of all possible moves even
             including illegal moves. Each space encodes 3 information: which
             piece, from where, and to where.
 
-            From the size 16 * 10 * 9 * 10 * 9, 16 is the number of pieces
-            and 10 * 9 is all possible grid positions on the board where the
-            first 10 * 9 represents the start position and the second part
+            From the size 25 * 12 * 5 * 12 * 5, 25 is the number of pieces
+            and 12 * 5 is all possible grid positions on the board where the
+            first 12 * 5 represents the start position and the second part
             represents the position the piece wants to move to.
 
             In addition to this, the environment will calculate legal and
             illegal moves within the action space to forbid illegal moves and
             penalize an agent trying to perform illegal moves and to correctly
-            implement Xiangqi rules.
+            implement Junqi rules.
 
         ally_color (int):
             Current environment's ally color
@@ -116,32 +115,32 @@ class JunQiEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     id_to_class = [
-        None,               # 0（无用占位）
-        Flag,               # 1 军旗
-        Field_Marshal,      # 2 司令
-        General,            # 3 军长
-        Major_General,      # 4 师长
-        Major_General,      # 5 师长
-        Brigadier_General,  # 6 旅长
-        Brigadier_General,  # 7 旅长
-        Colonel,            # 8 团长
-        Colonel,            # 9 团长
-        Engineer,           # 10 工兵
-        Engineer,           # 11 工兵
-        Engineer,           # 12 工兵
-        Landmine,           # 13 地雷
-        Landmine,           # 14 地雷
-        Landmine,           # 15 地雷
-        Major,              # 16 营长
-        Major,              # 17 营长
-        Captain,            # 18 连长
-        Captain,            # 19 连长
-        Captain,            # 20 连长
-        Lieutenant,         # 21 排长
-        Lieutenant,         # 22 排长
-        Lieutenant,         # 23 排长
-        Bomb,               # 24 炸弹
-        Bomb                # 25 炸弹
+        None,               
+        Flag,               
+        Field_Marshal,      
+        General,            
+        Major_General,      
+        Major_General,      
+        Brigadier_General,  
+        Brigadier_General,  
+        Colonel,            
+        Colonel,            
+        Engineer,           
+        Engineer,           
+        Engineer,           
+        Landmine,           
+        Landmine,           
+        Landmine,           
+        Major,              
+        Major,              
+        Captain,            
+        Captain,            
+        Captain,            
+        Lieutenant,         
+        Lieutenant,         
+        Lieutenant,         
+        Bomb,               
+        Bomb                
     ]
     
     PIECE_TYPE = {
@@ -242,11 +241,11 @@ class JunQiEnv(gym.Env):
 
     def step(self, action):
         """
-        Run one turn of Xiangqi game (ally or enemy side plays a move)
+        Run one turn of Junqi game (ally or enemy side plays a move)
         by processing given action based on current game turn owner
 
         Parameters:
-            action (int): a valid action in Xiangqi action space
+            action (int): a valid action in Junqi action space
 
         Return:
             tuple: observation, reward, done, info
@@ -475,7 +474,7 @@ class JunQiEnv(gym.Env):
 
     def close(self):
         """
-        Free up resources and gracefully exit the Xiangqi environment
+        Free up resources and gracefully exit the Junqi environment
         """
         if self._game:
             self._game.cleanup()
@@ -496,7 +495,7 @@ class JunQiEnv(gym.Env):
         """
         This method functions like the environment's step() method, but
         it is specifically designed to serve users when they are player of
-        a Xiangqi game (user VS agent mode). The method first renders game
+        a Junqi game (user VS agent mode). The method first renders game
         GUI and listens to user inputs. Then, when the user's piece movement
         is entered, it is converted into the action space and passed to
         environment's step() method. The environment then handles the input
@@ -507,7 +506,7 @@ class JunQiEnv(gym.Env):
             Observation, Reward, Done, Info
             The return values are the same with step() method.
         """
-        error_msg = "gym_xiangqi error: calling step_user with " \
+        error_msg = "gym_Junqi error: calling step_user with " \
                     "incorrect game turn (must be ally's turn)"
         assert self._turn == ALLY, error_msg
 

@@ -3,7 +3,7 @@ from gym_junqi.custom_board import custom_board
 
 """
 This file contains all the constants used throughout
-the Xiangqi environment.
+the Junqi environment.
 """
 import random
 """ PATHS """

@@ -3,9 +3,9 @@ from unittest.mock import patch
 import random
 import string
 
-from gym_xiangqi.envs.xiangqi_env import XiangQiEnv
-from gym_xiangqi.xiangqi_game import XiangQiGame
-from gym_xiangqi.constants import (
+from gym_junqi.envs.junqi_env import JunQiEnv
+from gym_junqi.junqi_game import JunQiGame
+from gym_junqi.constants import (
     BOARD_ROWS, BOARD_COLS,
     RED, BLACK, DEAD,
     ILLEGAL_MOVE, PIECE_POINTS, LOSE,
@@ -15,7 +15,7 @@ from gym_xiangqi.constants import (
 )
 
 
-class TestXiangQiEnv(unittest.TestCase):
+class TestJunQiEnv(unittest.TestCase):
 
     def assertStateEqual(self, obs, new_obs):
         for i in range(BOARD_ROWS):
@@ -23,7 +23,7 @@ class TestXiangQiEnv(unittest.TestCase):
                 self.assertEqual(obs[i][j], new_obs[i][j])
 
     def setUp(self):
-        self.env = XiangQiEnv()
+        self.env = JunQiEnv()
 
     def tearDown(self):
         self.env.close()
@@ -32,7 +32,7 @@ class TestXiangQiEnv(unittest.TestCase):
         self.assertEqual(self.env.ally_color, RED)
         self.assertEqual(self.env.enemy_color, BLACK)
 
-        self.env = XiangQiEnv(ally_color=BLACK)
+        self.env = JunQiEnv(ally_color=BLACK)
         self.assertEqual(self.env.ally_color, BLACK)
         self.assertEqual(self.env.enemy_color, RED)
 
@@ -225,7 +225,7 @@ class TestXiangQiEnv(unittest.TestCase):
             this.cur_selected_pid = CANNON_1
             this.end_pos = (0, 1)
 
-        with patch.object(XiangQiGame, 'run', new=mock_run):
+        with patch.object(JunQiGame, 'run', new=mock_run):
             obs, reward, done, _ = self.env.step_user()
 
         self.assertEqual(self.env.user_move_info, (CANNON_1, (7, 1), (0, 1)))

@@ -30,7 +30,7 @@ from gym_junqi.constants import (
 
 class Piece:
     """
-    A base class for all Xiangqi pieces
+    A base class for all Junqi pieces
 
     All pieces have the following:
 

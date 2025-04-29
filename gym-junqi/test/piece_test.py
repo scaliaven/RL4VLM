@@ -1,17 +1,17 @@
 import unittest
 
-from gym_xiangqi.piece import (
+from gym_junqi.piece import (
     Piece, General, Advisor, Elephant,
     Horse, Chariot, Cannon, Soldier
 )
-from gym_xiangqi.constants import (
+from gym_junqi.constants import (
     ALLY, ENEMY,
     RED, BLACK, GENERAL, ADVISOR_1,
     HORSE_1, ELEPHANT_1, SOLDIER_1,
     CHARIOT_1, CANNON_1
 )
-from gym_xiangqi.utils import is_ally
-from gym_xiangqi.envs.xiangqi_env import XiangQiEnv
+from gym_junqi.utils import is_ally
+from gym_junqi.envs.junqi_env import JunQiEnv
 
 
 class TestPieceClasses(unittest.TestCase):
@@ -25,7 +25,7 @@ class TestPieceClasses(unittest.TestCase):
         Helper function to sort then diff possible moves list of a piece.
 
         Parameters:
-            env (XiangQiEnv): Environment used to diff the move list.
+            env (JunQiEnv): Environment used to diff the move list.
             piece_id (int): ID of the piece to test.
             expected (List[Tuple]): Expected moves from the piece in
                 the format: [
@@ -68,7 +68,7 @@ class TestPieceClasses(unittest.TestCase):
             self.assertEqual(piece.color, BLACK)
 
     def test_general_can_move_within_palace(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
         # Test red general can only move forward 1 position from
         # starting position.
         self.diff_move_list(
@@ -95,7 +95,7 @@ class TestPieceClasses(unittest.TestCase):
         )
 
     def test_general_cannnot_move_out_of_palace(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
 
         # Move general to the top right hand corner of palace.
         self.move_piece(env=env,
@@ -112,7 +112,7 @@ class TestPieceClasses(unittest.TestCase):
         )
 
     def test_advisor_can_move_within_palace(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
         # Move the left advisor to the center of palace.
         self.move_piece(env=env,
                         piece_id=ADVISOR_1,
@@ -129,7 +129,7 @@ class TestPieceClasses(unittest.TestCase):
         )
 
     def test_advisor_cannot_move_out_of_palace(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
         # Move the left advisor to the top left of palace.
         self.move_piece(env=env,
                         piece_id=ADVISOR_1,
@@ -144,7 +144,7 @@ class TestPieceClasses(unittest.TestCase):
         )
 
     def test_horse_can_move(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
         # Move horse to an open space.
         self.move_piece(env=env,
                         piece_id=HORSE_1,
@@ -162,7 +162,7 @@ class TestPieceClasses(unittest.TestCase):
         )
 
     def test_horse_will_be_blocked_by_pieces(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
 
         # Move horse to be in between 2 soldiers
         # and in front of cannon.
@@ -180,7 +180,7 @@ class TestPieceClasses(unittest.TestCase):
         )
 
     def test_elephant_can_move(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
 
         self.diff_move_list(
             env=env,
@@ -192,7 +192,7 @@ class TestPieceClasses(unittest.TestCase):
         )
 
     def test_elephant_cannot_cross_river(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
 
         # Move elephant to edge of river.
         self.move_piece(env=env,
@@ -209,7 +209,7 @@ class TestPieceClasses(unittest.TestCase):
         )
 
     def test_soldier_can_move(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
 
         self.diff_move_list(
             env=env,
@@ -220,7 +220,7 @@ class TestPieceClasses(unittest.TestCase):
         )
 
     def test_soldier_can_move_sideways_after_river(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
 
         # Move soldier across the river.
         self.move_piece(env=env,
@@ -237,7 +237,7 @@ class TestPieceClasses(unittest.TestCase):
         )
 
     def test_chariot_can_move(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
 
         # Move chariot to front of cannon.
         self.move_piece(env=env,
@@ -256,7 +256,7 @@ class TestPieceClasses(unittest.TestCase):
         )
 
     def test_cannon_can_skip_enemy_piece(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
 
         # Move cannon forward 1 position and put
         # chariot behind to limit possible moves.
@@ -279,7 +279,7 @@ class TestPieceClasses(unittest.TestCase):
         )
 
     def test_cannon_can_skip_ally_piece(self):
-        env = XiangQiEnv()
+        env = JunQiEnv()
 
         # Move cannon and put horse in front of it.
         self.move_piece(env=env,
