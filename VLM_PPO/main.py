@@ -167,7 +167,7 @@ def main():
                              args.gamma, None, device, False, 1)
     elif "taxi" in args.env_name.lower():
         envs = make_vec_envs("Taxi-v3", args.seed, args.num_processes,
-                             args.gamma, None, device, False)
+                             args.gamma, None, device, False, feature_type = args.feature)
     elif "xiangqi" in args.env_name.lower():
         envs = make_vec_envs("gym_xiangqi:xiangqi-v0", args.seed, args.num_processes,
                              args.gamma, None, device, False)
