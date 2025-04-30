@@ -1,20 +1,28 @@
 #!/bin/bash
 
-#SBATCH --job-name=train_svd
-#SBATCH --output=logs/train_svd.out
-#SBATCH --error=logs/train_svd.err
-#SBATCH --cpus-per-task=8
+#SBATCH --job-name=run_nl_%j
+#SBATCH --output=logs/run_nl_%j.out
+#SBATCH --error=logs/run_nl_%j.err
+#SBATCH --tasks=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=32
+
+#SBATCH --account=bdhh-delta-gpu
+#SBATCH --partition=gpuH200x8
 #SBATCH --mem=128GB
 #SBATCH --ntasks=1
-#SBATCH --time=12:00:00
-#SBATCH --gres=gpu:h100:1
-#SBATCH --account=pr_133_tandon_advanced
-#SBATCH --mail-type=all
-#SBATCH --mail-user=hh3043@nyu.edu
-#SBATCH --requeue
+#SBATCH --time=18:00:00
+#SBATCH --gres=gpu:1
 
-source /share/apps/anaconda3/2020.07/etc/profile.d/conda.sh
-conda activate vlm4rl
+#SBATCH --mail-type=all
+#SBATCH --mail-user=yx3038@nyu.edu
+#SBATCH --no-requeue
+
+source /u/yxu21/miniforge3/etc/profile.d/conda.sh
+export LD_LIBRARY_PATH="/sw/spack/deltas11-2023-03/apps/linux-rhel8-x86_64/gcc-8.5.0/gcc-11.4.0-yycklku/lib64:${LD_LIBRARY_PATH}"
+conda activate rl4vlm
+module load cuda/12.4.0
+module load gcc/11.4.0
 
 TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES=0 accelerate launch --config_file config_zero2.yaml --main_process_port 29488 ../main.py \
     --feature image \
@@ -35,7 +43,7 @@ TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES=0 accelerate launch --config_f
     --model-path liuhaotian/llava-v1.6-mistral-7b \
     --use-lora \
     --train-vision all \
-    --env-name taxi \
+    --env-name junqi \
     # --env-name gym_cards/NumberLine-v0 \
     # --env-name nlp \
     # --wandb-project you_wandb_proj \

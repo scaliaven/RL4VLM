@@ -66,9 +66,10 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets, use_cnn=False, fea
                 env = EpisodicLifeEnv(env)
                 if "FIRE" in env.unwrapped.get_action_meanings():
                     env = FireResetEnv(env)
+
+        
         elif len(env.observation_space.shape) == 3:
             pass
-
 
         if use_cnn:
             obs_shape = env.observation_space.shape

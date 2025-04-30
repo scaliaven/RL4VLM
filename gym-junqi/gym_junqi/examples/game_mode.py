@@ -8,7 +8,7 @@ from gym_junqi.constants import (     # NOQA
     RED, BLACK, PIECE_ID_TO_NAME, ALLY
 )
 from gym_junqi.utils import action_space_to_move
-from gym_junqi.envs import JunQiEnv
+from gym_junqi.envs import JunQiEnvJunqiWrapper
 
 
 def main():
@@ -19,16 +19,18 @@ def main():
 
     done = False
     round = 0
+    state = env.reset()
     while not done:
         if env.turn == ALLY:
-            _, reward, done, info = env.step_user()
-
+            action = agent.move(env)
+            state, reward, done, info = env.step(action)
             if "exit" in info and info["exit"]:
                 break
 
             player = "You"
             piece, start, end = env.user_move_info
             piece = PIECE_ID_TO_NAME[piece]
+
         else:
             time.sleep(1)
             action = agent.move(env)

@@ -34,7 +34,6 @@ from llava.utils import disable_torch_init
 from llava.mm_utils import tokenizer_image_token, get_model_name_from_path, KeywordsStoppingCriteria
 from llava.model import LlavaLlamaForCausalLM
 from llava.model.language_model.llava_mistral import LlavaMistralForCausalLM
-
 import math
 import random
 from functools import partial
@@ -55,6 +54,7 @@ def text_process(obs, tokenizer):
     result = tokenizer_image_token(obs, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0)
     result[result == 0] = 259 # 869: . (period), 29871: SPIECE, 259: whitespace
     return result
+
 
 def main():
     args = get_args()
@@ -183,11 +183,18 @@ def main():
     if args.feature == "tensor":
         obs = obs[0]
     elif args.feature == "text":
-        obs = list(envs.envs[0].decode(obs))
-        obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
+        if "taxi" in args.env_name.lower():
+            obs = list(envs.envs[0].decode(obs))
+            obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
+        elif "junqi" in args.env_name.lower():
+            obs = envs.envs[0].get_state(feature_type=args.feature)
         obs = text_process(obs, tokenizer)
-    elif args.feature == "image" and "taxi" in args.env_name.lower():
-        obs = torch.tensor(envs.envs[0].render()).permute(2, 0, 1)
+    elif args.feature == "image":
+        if "taxi" in args.env_name.lower():
+            obs = torch.tensor(envs.envs[0].render()).permute(2, 0, 1)
+        elif "junqi" in args.env_name.lower():
+            obs = torch.tensor(envs.envs[0].get_state(feature_type=args.feature)).permute(2, 0, 1)
+            
     infos = None
     ## Inputing Prompt here
     qs = get_prompt(args.env_name, args.action_only_prompt, infos)
@@ -286,14 +293,20 @@ def main():
             prev_infos = copy.deepcopy(infos)
             obs, reward, done, infos = envs.step(action)
             if args.feature == "text":
-                obs = list(envs.envs[0].decode(obs))
-                obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
+                if "taxi" in args.env_name.lower():
+                    obs = list(envs.envs[0].decode(obs))
+                    obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
+                elif "junqi" in args.env_name.lower():
+                    obs = envs.envs[0].get_state(feature_type=args.feature)
                 obs = text_process(obs, tokenizer)
             elif args.feature == "tensor":
                 print(obs)
                 obs = obs[0]
-            elif args.feature == "image" and "taxi" in args.env_name.lower():
-                obs = torch.tensor(envs.envs[0].render()).permute(2, 0, 1)
+            elif args.feature == "image":
+                if "taxi" in args.env_name.lower():
+                    obs = torch.tensor(envs.envs[0].render()).permute(2, 0, 1)
+                elif "junqi" in args.env_name.lower():
+                    obs = torch.tensor(envs.envs[0].get_state(feature_type=args.feature)).permute(2, 0, 1)
 
             qs = get_prompt(args.env_name, args.action_only_prompt, infos)
             qs = DEFAULT_IMAGE_TOKEN + "\n" + qs

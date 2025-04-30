@@ -4,6 +4,9 @@ import pkg_resources
 import numpy as np
 import pygame
 
+import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
 from gym_junqi.utils import move_to_action_space, is_ally
 from gym_junqi.constants import (
     ORTHOGONAL, DIAGONAL,  # ELEPHANT_MOVE, HORSE_MOVE,    # piece moves
@@ -83,14 +86,8 @@ class Piece:
     def load_image(self, filename: str, piece_width, piece_height):
         if self.hidden:
             file_path = PATH_TO_UNKNOWN
-            target_file = os.path.join(file_path, 'unknown.png')
-            image = pygame.image.load(target_file).convert_alpha()
-            image = pygame.transform.scale(
-                image, (piece_width, piece_height)
-            )
-            return image
-        
-        if self.color == BLACK:
+            filename = "unknown.png"
+        elif self.color == BLACK:
             file_path = PATH_TO_BLACK
         else:
             file_path = PATH_TO_RED

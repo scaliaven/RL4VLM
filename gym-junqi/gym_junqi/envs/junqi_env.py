@@ -2,7 +2,8 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 import numpy as np
-
+import os, sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
 from gym_junqi.junqi_game import JunQiGame
 from gym_junqi.utils import (
     action_space_to_move,
@@ -419,12 +420,17 @@ class JunQiEnv(gym.Env):
 
         return self.get_state(), reward, self._done, {}
 
-    def get_state(self):
+    def get_state(self, feature_type='tensor'):
         obs = np.array(self._state)
         if self._turn == ALLY:
             obs[obs < 0] = -HIDDEN 
         elif self._turn == ENEMY:
             obs[obs > 0] = HIDDEN
+        if feature_type == 'text':
+            obs = obs_to_text(obs)
+        elif feature_type == 'image':
+            obs = self.render()
+        
         return obs
 
     def reset(self):
@@ -450,7 +456,7 @@ class JunQiEnv(gym.Env):
         self._game.set_pieces(self._ally_piece, self._enemy_piece)
         self._state_hash = hash(str(self._state))
 
-        return np.array(self._state)
+        return self.get_state()
 
     def render(self, mode='human'):
         """
@@ -466,7 +472,7 @@ class JunQiEnv(gym.Env):
             self._game.on_init()
         if self._ally_piece[GENERAL].basic_image is None:
             self._game.on_init_pieces()
-        self._game.render()
+        return self._game.render()
 
     def close(self):
         """
@@ -699,3 +705,21 @@ class JunQiEnv(gym.Env):
     @property
     def game(self):
         return self._game
+
+def obs_to_text(obs):
+    '''
+    obs: 2D tensor
+    return: str
+    '''
+    ls = []
+    for i in range(len(obs)):
+        for j in range(len(obs[0])):
+            if obs[i][j] == 0:
+                continue
+            else:
+                if abs(obs[i][j]) == 26:
+                    ls.append(f"A hidden enemy piece is located in ({i},{j})")
+                else:
+                    ls.append(f"An ally {JunQiEnv.PIECE_TYPE[abs(obs[i][j])]} piece is located in ({i},{j})")
+    text = "; ".join(ls)
+    return text

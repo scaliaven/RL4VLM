@@ -1,3 +1,4 @@
+import os
 import time
 
 import pygame
@@ -66,9 +67,14 @@ class JunQiGame:
         # self.init_timer() # hidden for now
 
         # set caption
-        self.screen = pygame.display.set_mode(self.dim)
-        pygame.display.set_caption("AI Junqi(Chinese Military Chess)")
-
+        if not os.environ.get("DISPLAY"):
+            print("Running in headless mode. Using off-screen surface.")
+            self.screen = pygame.Surface(self.dim)  # software surface
+            self.headless = True
+        else:
+            self.screen = pygame.display.set_mode(self.dim)
+            pygame.display.set_caption("AI Junqi (Chinese Military Chess)")
+            self.headless = False
 
         # init board
         self.board_background = self.init_board()
@@ -284,6 +290,8 @@ class JunQiGame:
 
         # draw all on screen
         pygame.display.update()
+
+        return pygame.surfarray.array3d(self.screen).swapaxes(0, 1)  # HWC format
 
     def cleanup(self):
         """
