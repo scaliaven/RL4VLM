@@ -137,7 +137,7 @@ def main():
         elif "xiangqi" in args.env_name:
             in_features = 90
         elif "taxi" in args.env_name:
-            in_features = 4
+            in_features = 1
         else:
             raise Exception(f"Tensor feature not supported for {args.env_name}")
         base.model.vision_tower = nn.Linear(in_features, 4096)
@@ -181,17 +181,13 @@ def main():
 
     obs = envs.reset()
     if args.feature == "tensor":
-        if "taxi" in args.env_name.lower():
-            obs = list(envs.envs[0].decode(obs))
-            obs = torch.tensor([obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item()])
-        else:
-            obs = obs[0]
-    if args.feature == "text":
+        obs = obs[0]
+    elif args.feature == "text":
         obs = list(envs.envs[0].decode(obs))
         obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
         obs = text_process(obs, tokenizer)
-    if args.feature == "image" and "taxi" in args.env_name.lower():
-        obs = envs.envs[0].render()
+    elif args.feature == "image" and "taxi" in args.env_name.lower():
+        obs = torch.tensor(envs.envs[0].render()).permute(2, 0, 1)
     infos = None
     ## Inputing Prompt here
     qs = get_prompt(args.env_name, args.action_only_prompt, infos)
@@ -218,7 +214,7 @@ def main():
     # https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CosineAnnealingLR.html
     lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.lr_max_steps, eta_min=args.end_lr)
 
-    # AcceleratorState().deepspeed_plugin.deepspeed_config['train_micro_batch_size_per_gpu'] = 1
+    AcceleratorState().deepspeed_plugin.deepspeed_config['train_micro_batch_size_per_gpu'] = 1
 
     actor_critic, optimizer, lr_scheduler = accelerator.prepare(actor_critic, optimizer, lr_scheduler)
 
@@ -239,7 +235,7 @@ def main():
                                 obs.shape, envs.action_space, args.max_new_tokens)
     elif args.feature == "image":
         rollouts = RolloutStorage(args.num_steps, args.num_processes,
-                                envs.observation_space.shape, envs.action_space, args.max_new_tokens)
+                                obs.shape, envs.action_space, args.max_new_tokens)
     elif args.feature == "tensor":
         rollouts = RolloutStorage(args.num_steps, args.num_processes,
                                 envs.observation_space.shape, envs.action_space, args.max_new_tokens)
@@ -296,6 +292,8 @@ def main():
             elif args.feature == "tensor":
                 print(obs)
                 obs = obs[0]
+            elif args.feature == "image" and "taxi" in args.env_name.lower():
+                obs = torch.tensor(envs.envs[0].render()).permute(2, 0, 1)
 
             qs = get_prompt(args.env_name, args.action_only_prompt, infos)
             qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
