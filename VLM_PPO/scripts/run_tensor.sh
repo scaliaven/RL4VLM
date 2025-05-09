@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#SBATCH --job-name=run_nl_%j
-#SBATCH --output=logs/run_nl_%j.out
-#SBATCH --error=logs/run_nl_%j.err
+#SBATCH --job-name=run_tensor_%j
+#SBATCH --output=logs/run_tensor_%j.out
+#SBATCH --error=logs/run_tensor_%j.err
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64GB
 #SBATCH --ntasks=1
@@ -16,7 +16,7 @@
 source /share/apps/anaconda3/2020.07/etc/profile.d/conda.sh
 conda activate vlm4rl
 
-TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES=0 accelerate launch --config_file config_zero2.yaml --main_process_port 29488 ../main.py \
+TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES=0 accelerate launch --config_file config_zero2.yaml --main_process_port 29500 ../main.py \
     --feature tensor \
     --init-lr 1e-5 \
     --end-lr 1e-9 \

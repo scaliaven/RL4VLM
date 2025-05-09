@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#SBATCH --job-name=run_nl_%j
-#SBATCH --output=logs/run_nl_%j.out
-#SBATCH --error=logs/run_nl_%j.err
+#SBATCH --job-name=run_text_%j
+#SBATCH --output=logs/run_text_%j.out
+#SBATCH --error=logs/run_text_%j.err
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64GB
 #SBATCH --ntasks=1
@@ -16,8 +16,8 @@
 source /share/apps/anaconda3/2020.07/etc/profile.d/conda.sh
 conda activate vlm4rl
 
-TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES=0 accelerate launch --config_file config_zero2.yaml --main_process_port 29488 ../main.py \
-    --feature tensor \
+TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES=0 accelerate launch --config_file config_zero2.yaml --main_process_port 29500 ../main.py \
+    --feature text \
     --init-lr 1e-5 \
     --end-lr 1e-9 \
     --lr_max_steps 25 \
@@ -35,10 +35,10 @@ TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES=0 accelerate launch --config_f
     --mini-batch-size 1 \
     --model-path liuhaotian/llava-v1.6-mistral-7b \
     --use-lora \
-    --train-vision all \
+    --train-vision text \
     --env-name taxi \
     --use-wandb \
-    --action_only_prompt \
+    # --action-only \
     # --env-name taxi \
     # --env-name gym_cards/NumberLine-v0 \
     # --env-name nlp \

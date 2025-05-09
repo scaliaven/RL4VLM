@@ -83,6 +83,11 @@ def get_args():
         default=256,
         help='number of environment steps collected at each iteration (default: 256)')
     parser.add_argument(
+        '--num-eval-steps',
+        type=int,
+        default=256,
+        help='number of evaluation steps (default: 256)')
+    parser.add_argument(
         '--ppo-epoch',
         type=int,
         default=4,

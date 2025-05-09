@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import accelerate
+from tqdm import tqdm
 
 
 class PPO():
@@ -44,7 +45,7 @@ class PPO():
         dist_entropy_epoch = 0
         grad_step = 0
         self.actor_critic.train()
-        for e in range(self.ppo_epoch):
+        for e in tqdm(range(self.ppo_epoch)):
             data_generator = rollouts.feed_forward_generator(
                     advantages, self.mini_batch_size)
             for sample in data_generator:

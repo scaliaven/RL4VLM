@@ -80,7 +80,7 @@ class VLMPolicy(nn.Module):
         elif feature_type == "text":
             result = obs
         elif feature_type == "tensor":
-            result = obs.reshape(1, 1, -1)
+            result = obs.reshape(1, 6, -1)
 
         return result
 

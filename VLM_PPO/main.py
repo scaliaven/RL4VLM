@@ -55,6 +55,22 @@ def text_process(obs, tokenizer):
     result[result == 0] = 259 # 869: . (period), 29871: SPIECE, 259: whitespace
     return result
 
+def taxi_process(obs):
+    def decoded(ele):
+        if ele == 0:
+            return [0, 0]
+        elif ele == 1:
+            return [0, 4]
+        elif ele == 2:
+            return [4, 0]
+        elif ele == 3:
+            return [4, 3]
+        else:
+            return [-1, -1]
+    processed_obs = [4-obs[0].item(), obs[1].item()]
+    for ele in obs[2:]:
+        processed_obs += [i for i in decoded(ele)]
+    return processed_obs
 
 def main():
     args = get_args()
@@ -154,10 +170,11 @@ def main():
     if args.use_lora:
         base = get_peft_model(base, base_lora_config)
 
-    target_names = ["vision_tower", "mm_projector"]
-    for name, param in base.named_parameters():
-        if any(target in name for target in target_names):
-            param.requires_grad = True
+    if args.feature == "tensor":
+        target_names = ["vision_tower"]
+        for name, param in base.named_parameters():
+            if any(target in name for target in target_names):
+                param.requires_grad = True
     
     value_model = VLMValue(base)
     value_model = value_model.to(model_device)
@@ -181,11 +198,17 @@ def main():
 
     obs = envs.reset()
     if args.feature == "tensor":
-        obs = obs[0]
+        if "taxi" in args.env_name.lower():
+            obs = torch.tensor(taxi_process(list(envs.envs[0].decode(obs)))).unsqueeze(0)
+        else:
+            obs = obs[0]
     elif args.feature == "text":
         if "taxi" in args.env_name.lower():
-            obs = list(envs.envs[0].decode(obs))
-            obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
+            obs = taxi_process(list(envs.envs[0].decode(obs)))
+            if obs[2] != -1:
+                obs = "taxi is in row {} and column {}. Passenger is located in row {} and column {} want to move to location in row {} and column {}".format(obs[0], obs[1], obs[2], obs[3], obs[4], obs[5])
+            else:
+                obs = "taxi is in row {} and column {}. Passenger has already been picked up by the taxi and they want to move to location in row {} and column {}".format(obs[0], obs[1], obs[4], obs[5])
         elif "junqi" in args.env_name.lower():
             obs = envs.envs[0].get_state(feature_type=args.feature)
         obs = text_process(obs, tokenizer)
@@ -245,8 +268,10 @@ def main():
                                 obs.shape, envs.action_space, args.max_new_tokens)
     elif args.feature == "tensor":
         rollouts = RolloutStorage(args.num_steps, args.num_processes,
-                                envs.observation_space.shape, envs.action_space, args.max_new_tokens)
+                                obs.shape, envs.action_space, args.max_new_tokens)
     _, output_ids, action, action_log_prob, action_tokens_log_prob = actor_critic.act(obs, INPUT_IDS = INPUT_IDS, feature_type=args.feature)
+    text_action = tokenizer.decode(list(filter(lambda num: num != 0, output_ids[0].tolist())))
+    print("text_action:{}".format(text_action))
     # print("Shape & Type of observation:", obs.shape, type(obs))
     print("action:{}".format(action))
     print("action_log_prob:{}".format(action_log_prob))
@@ -294,14 +319,20 @@ def main():
             obs, reward, done, infos = envs.step(action)
             if args.feature == "text":
                 if "taxi" in args.env_name.lower():
-                    obs = list(envs.envs[0].decode(obs))
-                    obs = "taxi is in row {} and column {}. Passenger is located in location {} and want to move to location {}".format(obs[0].item(), obs[1].item(), obs[2].item(), obs[3].item())
+                    obs = taxi_process(list(envs.envs[0].decode(obs)))
+                    if obs[2] != -1:
+                        obs = "taxi is in row {} and column {}. Passenger is located in row {} and column {} want to move to location in row {} and column {}".format(obs[0], obs[1], obs[2], obs[3], obs[4], obs[5])
+                    else:
+                        obs = "taxi is in row {} and column {}. Passenger has already been picked up by the taxi and they want to move to location in row {} and column {}".format(obs[0], obs[1], obs[4], obs[5])
                 elif "junqi" in args.env_name.lower():
                     obs = envs.envs[0].get_state(feature_type=args.feature)
                 obs = text_process(obs, tokenizer)
             elif args.feature == "tensor":
-                print(obs)
-                obs = obs[0]
+                # print(obs)
+                if "taxi" in args.env_name.lower():
+                    obs = torch.tensor(taxi_process(list(envs.envs[0].decode(obs)))).unsqueeze(0)
+                else:
+                    obs = obs[0]
             elif args.feature == "image":
                 if "taxi" in args.env_name.lower():
                     obs = torch.tensor(envs.envs[0].render()).permute(2, 0, 1)
@@ -361,12 +392,12 @@ def main():
             end = time.time()
 
             print(
-                "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.2f}/{:.2f}, min/max reward {:.2f}/{:.2f}, success_rate {:.2f}\n"
+                "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.2f}/{:.2f}, min/max reward {:.2f}/{:.2f}, success {:.10f}\n"
                 .format(j, total_num_steps,
                         int(total_num_steps / (end - start)),
                         len(episode_rewards), np.mean(episode_rewards),
                         np.median(episode_rewards), np.min(episode_rewards),
-                        np.max(episode_rewards), np.mean(episode_success_rate),
+                        np.max(episode_rewards), np.sum(episode_success_rate),
                         dist_entropy, value_loss, action_loss))
             if args.use_wandb:
                 wandb.log({"iteration": j,
@@ -394,6 +425,154 @@ def main():
                         "value.min": rollouts.value_preds.min().item(),
                         "value.mean": rollouts.value_preds.mean().item(),
                         "value.std": rollouts.value_preds.std().item(),})
+
+    # evaluate by # of successful episodes
+    with torch.no_grad():
+        obs = envs.reset()
+        if args.feature == "tensor":
+            if "taxi" in args.env_name.lower():
+                obs = torch.tensor(taxi_process(list(envs.envs[0].decode(obs)))).unsqueeze(0)
+            else:
+                obs = obs[0]
+        elif args.feature == "text":
+            if "taxi" in args.env_name.lower():
+                obs = taxi_process(list(envs.envs[0].decode(obs)))
+                if obs[2] != -1:
+                    obs = "taxi is in row {} and column {}. Passenger is located in row {} and column {} want to move to location in row {} and column {}".format(obs[0], obs[1], obs[2], obs[3], obs[4], obs[5])
+                else:
+                    obs = "taxi is in row {} and column {}. Passenger has already been picked up by the taxi and they want to move to location in row {} and column {}".format(obs[0], obs[1], obs[4], obs[5])
+            elif "junqi" in args.env_name.lower():
+                obs = envs.envs[0].get_state(feature_type=args.feature)
+            obs = text_process(obs, tokenizer)
+        elif args.feature == "image":
+            if "taxi" in args.env_name.lower():
+                obs = torch.tensor(envs.envs[0].render()).permute(2, 0, 1)
+            elif "junqi" in args.env_name.lower():
+                obs = torch.tensor(envs.envs[0].get_state(feature_type=args.feature)).permute(2, 0, 1)
+                
+        infos = None
+        ## Inputing Prompt here
+        qs = get_prompt(args.env_name, args.action_only_prompt, infos)
+        qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
+        conv = conv_templates[args.conv_mode].copy()
+        conv.append_message(conv.roles[0], qs)
+        conv.append_message(conv.roles[1], None)
+
+        if args.feature == "text":
+            rollouts = RolloutStorage(args.num_steps, args.num_processes,
+                                    obs.shape, envs.action_space, args.max_new_tokens)
+        elif args.feature == "image":
+            rollouts = RolloutStorage(args.num_steps, args.num_processes,
+                                    obs.shape, envs.action_space, args.max_new_tokens)
+        elif args.feature == "tensor":
+            rollouts = RolloutStorage(args.num_steps, args.num_processes,
+                                    envs.observation_space.shape, envs.action_space, args.max_new_tokens)
+        _, output_ids, action, action_log_prob, action_tokens_log_prob = actor_critic.act(obs, INPUT_IDS = INPUT_IDS, feature_type=args.feature)
+        # print("Shape & Type of observation:", obs.shape, type(obs))
+        print("action:{}".format(action))
+        print("action_log_prob:{}".format(action_log_prob))
+        print("action_tokens_log_prob:{}".format(action_tokens_log_prob))
+
+        rollouts.obs[0].copy_(obs)
+        rollouts.to(device)
+
+        episode_rewards = deque(maxlen=args.eval_num_per_episode)
+        episode_success_rate = deque(maxlen=args.eval_num_per_episode)
+        episode_action_tokens_log_prob = deque(maxlen=args.eval_num_per_episode)
+
+        start = time.time()
+        num_updates = int(
+            args.num_env_steps) // args.num_steps // args.num_processes
+        if args.use_wandb:
+            import wandb
+            run_name = args.wandb_run + "-" + args.env_name
+            wandb.init(project=args.wandb_project, name=run_name, group=run_name, config=args)
+
+        print(qs)
+        running_episode_rewards = torch.zeros(args.num_processes).flatten()
+
+        num_explore = int(args.explore_portion*num_updates)
+        prev_infos = []
+        infos = []
+
+        for step in tqdm(range(args.num_steps), desc=f'evaluating'):
+            # Sample actions
+            with torch.no_grad():
+                INPUT_IDS = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0)
+                INPUT_IDS[INPUT_IDS == 0] = 259 # 869: . (period), 29871: SPIECE, 259: whitespace
+                if args.feature == "text":
+                    value, output_id, action, action_log_prob, action_tokens_log_prob = actor_critic.act(
+                            rollouts.obs[step][0], INPUT_IDS = INPUT_IDS, feature_type=args.feature)
+                elif args.feature == "image":
+                    value, output_id, action, action_log_prob, action_tokens_log_prob = actor_critic.act(
+                            rollouts.obs[step], INPUT_IDS = INPUT_IDS, feature_type=args.feature)
+                elif args.feature == "tensor":
+                    value, output_id, action, action_log_prob, action_tokens_log_prob = actor_critic.act(
+                            rollouts.obs[step], INPUT_IDS = INPUT_IDS, feature_type=args.feature)
+            text_action = tokenizer.decode(list(filter(lambda num: num != 0, output_id[0].tolist())))
+            prev_infos = copy.deepcopy(infos)
+            obs, reward, done, infos = envs.step(action)
+            if args.feature == "text":
+                if "taxi" in args.env_name.lower():
+                    obs = taxi_process(list(envs.envs[0].decode(obs)))
+                    if obs[2] != -1:
+                        obs = "taxi is in row {} and column {}. Passenger is located in row {} and column {} want to move to location in row {} and column {}".format(obs[0], obs[1], obs[2], obs[3], obs[4], obs[5])
+                    else:
+                        obs = "taxi is in row {} and column {}. Passenger has already been picked up by the taxi and they want to move to location in row {} and column {}".format(obs[0], obs[1], obs[4], obs[5])
+                elif "junqi" in args.env_name.lower():
+                    obs = envs.envs[0].get_state(feature_type=args.feature)
+                obs = text_process(obs, tokenizer)
+            elif args.feature == "tensor":
+                # print(obs)
+                if "taxi" in args.env_name.lower():
+                    obs = torch.tensor(taxi_process(list(envs.envs[0].decode(obs)))).unsqueeze(0)
+                else:
+                    obs = obs[0]
+            elif args.feature == "image":
+                if "taxi" in args.env_name.lower():
+                    obs = torch.tensor(envs.envs[0].render()).permute(2, 0, 1)
+                elif "junqi" in args.env_name.lower():
+                    obs = torch.tensor(envs.envs[0].get_state(feature_type=args.feature)).permute(2, 0, 1)
+
+            qs = get_prompt(args.env_name, args.action_only_prompt, infos)
+            qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
+            conv = conv_templates[args.conv_mode].copy()
+            conv.append_message(conv.roles[0], qs)
+            conv.append_message(conv.roles[1], None)
+            prompt = conv.get_prompt()
+            masks = torch.FloatTensor(
+                [[0.0] if done_ else [1.0] for done_ in done])
+
+            running_episode_rewards += reward.flatten()
+            for i, d, r in zip(range(args.num_processes), done, reward):
+                if d:
+                    episode_rewards.append(running_episode_rewards[i].item())
+                    if running_episode_rewards[i] > 0:
+                        episode_success_rate.append(1)
+                    else:
+                        episode_success_rate.append(0)
+                    episode_action_tokens_log_prob.append(action_tokens_log_prob[i].item())
+                    running_episode_rewards[i] = 0
+            # bad_mask is a legacy implementation of the storage.py file
+            bad_masks = torch.FloatTensor(
+                [[0.0] if 'bad_transition' in info.keys() else [1.0] for info in infos])
+            rollouts.insert(obs, output_id, action,
+                            action_log_prob, value, reward, masks, bad_masks)
+    
+    if len(episode_rewards) > 1:
+        total_num_steps = (j + 1) * args.num_processes * args.num_steps
+        end = time.time()
+
+        print(
+            "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.2f}/{:.2f}, min/max reward {:.2f}/{:.2f}, success_rate {:.2f}\n"
+            .format(j, total_num_steps,
+                    int(total_num_steps / (end - start)),
+                    len(episode_rewards), np.mean(episode_rewards),
+                    np.median(episode_rewards), np.min(episode_rewards),
+                    np.max(episode_rewards), np.mean(episode_success_rate),
+                    ))
+    else:
+        print("No episode rewards, evaluation failed")
 
 if __name__ == "__main__":
     main()

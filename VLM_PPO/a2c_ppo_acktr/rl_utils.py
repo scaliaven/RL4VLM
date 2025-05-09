@@ -62,17 +62,23 @@ def get_prompt(env_name, action_only, infos = None):
             qs = qs + "Otherwise consider which number or operator should be appended to the current formula to make it equal 24.} \n"
         qs = qs + "\"action\": \"{number}\" or \"{operator}\" \n \}"
     elif env_name == 'taxi':
-        qs = "You are playing a game called Taxi. You will see the taxi position in rows and columns, passenger location, and destination. "
-        qs = qs + "And your goal is to drives to the passenger's location, picks up the passenger, drives to the passenger's destination. "
-        qs = qs + "Your response should be a valid json file in the following format: \n{\n "
-        qs = qs + "\"action\": \"move south\" or \"move north\" or \"move east\" or \"move west\" or \"pickup passenger\" or \"drop off passenger\"\n}"
+        qs = "These are the taxi position in rows and columns, passenger location, and destination. "
+        qs = qs + "And your goal is to drives to the passenger's location, picks up the passenger, drives to the passenger's destination."
+        # if not action_only:
+        #     qs = qs + "Note that if the passinger is in position (-1, -1), then passinger is picked up. \n"
+        qs = qs + "you need to pick exactly one action from:"
+        qs = qs + "\"move south\", \"move north\", \"move east\", \"move west\", \"pickup passenger\", \"drop off passenger\" \n"
+        qs = qs + "Your response should be a valid json file in the following format: \n{\n"
+        if not action_only:
+            qs = qs + "\"thoughts\": \n"
+        qs = qs + "\"action\": \n}"
     elif env_name == "xiangqi":
-        qs = "You are playing a game called Xiangqi. You will see the locations for each piece. "
+        qs = "You are playing a game called Xiangqi. You are observing the locations for each piece. "
         qs = qs + "And your goal is to move a piece at one step, follow the rules and win the game. "
         qs = qs + "Your response should be a valid json file in the following format: \n{\n "
         qs = qs + "\"action\": \n}"
     elif env_name == "junqi":
-        qs = "You are playing a game called Junqi. You will see the locations for each piece, but the types of enemy pieces are hidden."
+        qs = "You are playing a game called Junqi. You are observing the locations for each piece, but the types of enemy pieces are hidden."
         qs = qs + "And your goal is to move a piece at one step, follow the rules and win the game. "
         qs = qs + "Your response should be a valid json file in the following format: \n{\n "
         qs = qs + "\"action\": \n}"
@@ -123,8 +129,17 @@ def text_projection(text_actions: List[str], env_name):
         if len(contained_actions) == 1 and contained_actions[0] in action_list:
             # Only one keyword from action_list is in the string
             output_indices.append(action_list.index(contained_actions[0]))
-        else:
-            # The string contains none or multiple keywords, randomly select an index from action_list
+        elif len(contained_actions) == 0:
+            # No keywords from action_list are in the string
             output_indices.append(random.randint(0, len(action_list) - 1))
+        else:
+            tmp = []
+            for i in range(len(contained_actions)):
+                if contained_actions[i] in action_list:
+                    tmp.append(action_list.index(contained_actions[i]))
+            # output_indices.append(random.choice(tmp))
+            output_indices.append(tmp[0])
+            # # The string contains none or multiple keywords, randomly select an index from action_list
+            # output_indices.append(random.randint(0, len(action_list) - 1))
     return torch.Tensor([output_indices]).long().reshape(-1, 1)
 
