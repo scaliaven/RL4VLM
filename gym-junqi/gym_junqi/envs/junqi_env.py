@@ -291,7 +291,9 @@ class JunQiEnv(gym.Env):
                     "when the episode has terminated (i.e 'done == True')",
                     "yellow"
                 ))
-            return self.get_state(), 0, self._done, {}
+            mask = np.zeros(self.action_space.n, dtype=int)
+            info = {"action_mask": mask}
+            return self.get_state(), 0, self._done, info
 
         # Prepare game state variables
         reward = 0.0
@@ -305,10 +307,11 @@ class JunQiEnv(gym.Env):
             pieces = self._enemy_piece
             possible_actions = self.enemy_actions
             # jiang_history = self._enemy_jiang_history
+        info = info = {"action_mask": possible_actions.astype(int)}
 
         # Check for illegal move, flying general, etc. and penalize the agent
         if possible_actions[action] == 0:
-            return self.get_state(), ILLEGAL_MOVE, False, {}
+            return self.get_state(), ILLEGAL_MOVE, False, info
 
         piece, start, end = action_space_to_move(action)
         attacker_id = piece
@@ -330,7 +333,7 @@ class JunQiEnv(gym.Env):
             reward -= 0.5* PIECE_POINTS[abs(attacker_id)]  
             # the reward policy need further consideration
             print(reward)
-            return self.get_state(), 0, self._done, {}
+            return self.get_state(), 0, self._done, info
 
         # Regular move or attacker wins
         self._state[start[0]][start[1]] = EMPTY
@@ -366,7 +369,7 @@ class JunQiEnv(gym.Env):
         if abs(rm_piece_id) == 1:
             self._done = True   # Optional: strong bonus (1000) for winning with flag
             print(reward)
-            return self.get_state(), reward, self._done, {}
+            return self.get_state(), reward, self._done, info
 
         # Win condition 2: all opponent pieces dead
         enemy_pieces = self._enemy_piece if self._turn == ALLY else self._ally_piece
@@ -374,7 +377,7 @@ class JunQiEnv(gym.Env):
             self._done = True
             # reward += 1000， the reward policy need further consideration
             print(reward)
-            return self.get_state(), reward, self._done, {}
+            return self.get_state(), reward, self._done, info
 
         # # Check if the removed piece is a soldier that has crossed the river
         # if SOLDIER_1 <= abs(rm_piece_id) <= SOLDIER_5:
@@ -418,7 +421,7 @@ class JunQiEnv(gym.Env):
         self._state_hash = hash(str(self._state))
         print(reward)
 
-        return self.get_state(), reward, self._done, {}
+        return self.get_state(), reward, self._done, info
 
     def get_state(self, feature_type='tensor'):
         obs = np.array(self._state)

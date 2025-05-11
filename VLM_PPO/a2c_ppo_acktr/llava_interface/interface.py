@@ -10,7 +10,7 @@ def get_chunk(lst, n, k):
     chunks = split_list(lst, n)
     return chunks[k]
 
-def llava_generate(value_model, tokenizer, input_ids, image_tensor, args):
+def llava_generate(value_model, tokenizer, input_ids, image_tensor, args, action_mask=None):
     base = value_model.base
     if args.feature == "image":
         image_tensor = image_tensor.to(base.device, dtype = base.dtype)
@@ -33,14 +33,24 @@ def llava_generate(value_model, tokenizer, input_ids, image_tensor, args):
         return_dict_in_generate=True,
         pad_token_id=tokenizer.eos_token_id,)
         output_ids = outputs['sequences']
-    outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
+        last_hidden_states = outputs.hidden_states[-1][1][:, -1, :]
+        action_logits = value_model.action_head(last_hidden_states)
+        
+        if action_mask is not None:
+            mask = torch.tensor(action_mask, dtype=torch.bool, device=base.device)
+            illegal = ~mask                            # illegal positions = True
+            action_logits[0, illegal] = -1e9 
+        action = torch.argmax(action_logits, dim=-1)    
+    # outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
+        # output_ids = value_model.action_head(last_hidden_states)
     padded_output_ids = torch.zeros(output_ids.size(0), 2*args.max_new_tokens).to(dtype=output_ids.dtype, device = output_ids.device)
     padded_output_ids[:, :output_ids.size(1)] = output_ids
     with torch.no_grad():
         values, sum_log_probs, action_tokens_log_prob = llava_evaluate(value_model, input_ids, padded_output_ids, image_tensor, args.temperature, args.thought_prob_coef, args.feature)
-    return values, padded_output_ids, outputs, sum_log_probs, action_tokens_log_prob
+    # padded_output_ids = sum_log_probs = action_tokens_log_prob = None
+    return values, padded_output_ids, action, sum_log_probs, action_tokens_log_prob
 
-def llava_evaluate(value_model, input_ids, output_ids, image_tensor, temperature, thought_prob_coef, feature_type="image"):
+def llava_evaluate(value_model, input_ids, output_ids, image_tensor, temperature, thought_prob_coef, feature_type="image", action_mask=None):
     if output_ids.size(0) != 1:
         input_ids = input_ids.broadcast_to(output_ids.size(0), input_ids.size(-1))
     base = value_model.base

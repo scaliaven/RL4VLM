@@ -1,20 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=run_nl_%j
-#SBATCH --output=logs/run_nl_%j.out
-#SBATCH --error=logs/run_nl_%j.err
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=64GB
-#SBATCH --ntasks=1
-#SBATCH --time=24:00:00
-#SBATCH --gres=gpu:h100:1
-#SBATCH --account=pr_133_tandon_advanced
-#SBATCH --mail-type=all
-#SBATCH --mail-user=hh3043@nyu.edu
-#SBATCH --requeue
-
-source /share/apps/anaconda3/2020.07/etc/profile.d/conda.sh
-conda activate vlm4rl
+source setup.sh
+check_sbash run_nl_%j 16 128 24 1 "tandon_h100_1,tandon_a100_1,tandon_a100_2"
 
 TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES=0 accelerate launch --config_file config_zero2.yaml --main_process_port 29488 ../main.py \
     --feature tensor \
@@ -36,7 +23,7 @@ TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES=0 accelerate launch --config_f
     --model-path liuhaotian/llava-v1.6-mistral-7b \
     --use-lora \
     --train-vision all \
-    --env-name taxi \
+    --env-name junqi \
     --use-wandb \
     --action_only_prompt \
     # --env-name taxi \

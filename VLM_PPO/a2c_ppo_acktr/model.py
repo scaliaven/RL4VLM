@@ -19,7 +19,7 @@ class VLMValue(nn.Module):
     """
     actually the base is also used for generation!
     """
-    def __init__(self, base):
+    def __init__(self, base, action_space_size=4):
         super(VLMValue, self).__init__()
         self.base = base
         # hard-code value head
@@ -31,6 +31,7 @@ class VLMValue(nn.Module):
             nn.ReLU(), # Non-linearity
             nn.Linear(512, 1) # Output layer
             ).to(base.device, dtype=torch.float16) # Move to specified device with dtype
+        self.action_head = nn.Linear(4096, action_space_size).to(base.device, dtype=torch.float16)
 
     def forward(self, input_ids, image_tensor, feature_type="image"):
         if image_tensor.size(0) != 1:
@@ -84,18 +85,22 @@ class VLMPolicy(nn.Module):
 
         return result
 
-    def act(self, inputs, deterministic=False, INPUT_IDS=None, feature_type="image"):
+    def act(self, inputs, deterministic=False, INPUT_IDS=None, feature_type="image", action_mask=None):
         # print(type(inputs), type(INPUT_IDS))
         image_tensor = self.process_obs(inputs, feature_type)
         # print(type(image_tensor), image_tensor.shape)
         if INPUT_IDS is None:
             INPUT_IDS = self.INPUT_IDS
-        value, output_ids, text_action, action_log_prob, action_tokens_log_prob = llava_generate(value_model = self.value_model,
+        value, output_ids, action, action_log_prob, action_tokens_log_prob = llava_generate(value_model = self.value_model,
                                                     tokenizer = self.tokenizer,
                                                     input_ids = INPUT_IDS,
                                                     image_tensor = image_tensor,
-                                                    args = self.args)
-        action = self.projection_f(text_action)
+                                                    action_mask = action_mask,
+                                                    args = self.args
+                                                    )
+        
+        # action = self.projection_f(text_action)
+        
         return value, output_ids, action, action_log_prob, action_tokens_log_prob
 
     def get_value(self, inputs, INPUT_IDS=None, feature_type="image"):

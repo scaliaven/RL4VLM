@@ -175,9 +175,6 @@ def main():
         for name, param in base.named_parameters():
             if any(target in name for target in target_names):
                 param.requires_grad = True
-    
-    value_model = VLMValue(base)
-    value_model = value_model.to(model_device)
 
     if "gym_cards" in args.env_name.lower():
         envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
@@ -194,7 +191,9 @@ def main():
     else:
         print("Environment not supported")
         exit(1)
-
+        
+    value_model = VLMValue(base, action_space_size=envs.envs[0].action_space.n)
+    value_model = value_model.to(model_device)
 
     obs = envs.reset()
     if args.feature == "tensor":
@@ -272,7 +271,7 @@ def main():
     _, output_ids, action, action_log_prob, action_tokens_log_prob = actor_critic.act(obs, INPUT_IDS = INPUT_IDS, feature_type=args.feature)
     text_action = tokenizer.decode(list(filter(lambda num: num != 0, output_ids[0].tolist())))
     print("text_action:{}".format(text_action))
-    # print("Shape & Type of observation:", obs.shape, type(obs))
+    print("Shape & Type of observation:", obs.shape, type(obs))
     print("action:{}".format(action))
     print("action_log_prob:{}".format(action_log_prob))
     print("action_tokens_log_prob:{}".format(action_tokens_log_prob))
@@ -298,6 +297,7 @@ def main():
     num_explore = int(args.explore_portion*num_updates)
     prev_infos = []
     infos = []
+    action_mask = None
     for j in range(num_updates):
 
         for step in tqdm(range(args.num_steps), desc=f'training for epoch {j}'):
@@ -307,16 +307,19 @@ def main():
                 INPUT_IDS[INPUT_IDS == 0] = 259 # 869: . (period), 29871: SPIECE, 259: whitespace
                 if args.feature == "text":
                     value, output_id, action, action_log_prob, action_tokens_log_prob = actor_critic.act(
-                            rollouts.obs[step][0], INPUT_IDS = INPUT_IDS, feature_type=args.feature)
+                            rollouts.obs[step][0], INPUT_IDS = INPUT_IDS, feature_type=args.feature, action_mask=action_mask)
                 elif args.feature == "image":
                     value, output_id, action, action_log_prob, action_tokens_log_prob = actor_critic.act(
-                            rollouts.obs[step], INPUT_IDS = INPUT_IDS, feature_type=args.feature)
+                            rollouts.obs[step], INPUT_IDS = INPUT_IDS, feature_type=args.feature, action_mask=action_mask)
                 elif args.feature == "tensor":
                     value, output_id, action, action_log_prob, action_tokens_log_prob = actor_critic.act(
-                            rollouts.obs[step], INPUT_IDS = INPUT_IDS, feature_type=args.feature)
+                            rollouts.obs[step], INPUT_IDS = INPUT_IDS, feature_type=args.feature, action_mask=action_mask)
+            # import pdb; pdb.set_trace()
             text_action = tokenizer.decode(list(filter(lambda num: num != 0, output_id[0].tolist())))
             prev_infos = copy.deepcopy(infos)
             obs, reward, done, infos = envs.step(action)
+            action_mask = infos[0]['action_mask']
+            print(obs)
             if args.feature == "text":
                 if "taxi" in args.env_name.lower():
                     obs = taxi_process(list(envs.envs[0].decode(obs)))
